@@ -1,5 +1,5 @@
-# Use the official Rust image as a base
-FROM rust:latest
+# Use the official Rust image as a base for building the application
+FROM rust:latest AS builder
 
 # Set the working directory
 WORKDIR /app
@@ -17,7 +17,8 @@ RUN cargo build --release
 RUN rm -f src/main.rs
 
 # Copy the source code
-COPY . .
+COPY src ./src
+COPY static ./static
 
 # Build the application
 RUN cargo build --release
@@ -26,7 +27,7 @@ RUN cargo build --release
 FROM debian:buster-slim
 
 # Copy the built binary from the build stage
-COPY --from=0 /app/target/release/url_shortener /usr/local/bin/url_shortener
+COPY --from=builder /app/target/release/url_shortener /usr/local/bin/url_shortener
 
 # Expose the port the app runs on
 EXPOSE 8080
