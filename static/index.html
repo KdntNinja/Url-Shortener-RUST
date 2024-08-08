@@ -33,7 +33,10 @@
                             <label for="original-url" class="form-label">Original URL:</label>
                             <input v-model="originalUrl" type="text" id="original-url" class="form-control" placeholder="Enter URL" required>
                         </div>
-                        <div v-if="showCustomOptions" class="mb-3">
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-link" @click="toggleCustomOptions">Custom Short URL (Optional)</button>
+                        </div>
+                        <div v-if="customOptionsVisible" class="mb-3">
                             <label for="custom-url" class="form-label">Custom Short URL:</label>
                             <input v-model="customUrl" type="text" id="custom-url" class="form-control" placeholder="Enter custom short URL">
                         </div>
@@ -45,26 +48,25 @@
         </div>
     </div>
 
+    <!-- Vue.js App Script -->
     <script>
         const app = Vue.createApp({
             data() {
                 return {
-                    originalUrl: "",
-                    customUrl: "",
-                    resultMessage: "",
-                    password: "9521383"
+                    originalUrl: '',
+                    customUrl: '',
+                    resultMessage: '',
+                    customOptionsVisible: false
                 };
             },
-            computed: {
-                showCustomOptions() {
-                    return this.originalUrl === this.password;
-                }
-            },
             methods: {
+                toggleCustomOptions() {
+                    this.customOptionsVisible = !this.customOptionsVisible;
+                },
                 async shortenUrl() {
                     try {
                         let url = '/shorten';
-                        if (this.showCustomOptions && this.customUrl.trim()) {
+                        if (this.customOptionsVisible && this.customUrl.trim()) {
                             url = `/${this.customUrl}/shorten`;
                         }
                         const response = await fetch(url, {
@@ -73,7 +75,11 @@
                             body: this.originalUrl
                         });
                         const result = await response.text();
-                        this.resultMessage = `Shortened URL: <a href="https://kdnsite.xyz/${result}" target="_blank">kdnsite.xyz/${result}</a>`;
+                        if (result === 'Custom URL already exists') {
+                            this.resultMessage = 'Error: Custom URL already exists.';
+                        } else {
+                            this.resultMessage = `Shortened URL: <a href="https://kdnsite.xyz/${result}" target="_blank">kdnsite.xyz/${result}</a>`;
+                        }
                     } catch (error) {
                         this.resultMessage = 'Error shortening URL.';
                     }
