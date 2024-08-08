@@ -1,3 +1,4 @@
+use actix_files as fs;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use uuid::Uuid;
 use sqlx::sqlite::SqlitePoolOptions;
@@ -89,7 +90,6 @@ async fn main() -> std::io::Result<()> {
     let mut database_path = env::current_dir().expect("Failed to get current directory");
     database_path.push("src/database.db");
 
-    // Check if the database file exists, if not, create it
     if !database_path.exists() {
         File::create(&database_path).expect("Failed to create database file");
     }
@@ -121,6 +121,7 @@ async fn main() -> std::io::Result<()> {
             .route("/shorten", web::post().to(shorten_url))
             .route("/{custom}/shorten", web::post().to(custom_shorten_url))
             .route("/{shortened_url}", web::get().to(redirect_to_original))
+            .service(fs::Files::new("/", "./static").index_file("index.html"))
     })
     .bind("127.0.0.1:8080")?
     .run()

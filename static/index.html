@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <h1>URL Shortener</h1>
+    <form id="shorten-form">
+        <label for="original-url">Original URL:</label>
+        <input type="text" id="original-url" placeholder="Enter URL to shorten" required>
+        <button type="submit">Shorten</button>
+    </form>
+    <form id="custom-shorten-form">
+        <label for="custom-url">Custom Short URL:</label>
+        <input type="text" id="custom-url" placeholder="Enter custom short URL" required>
+        <label for="original-url-custom">Original URL:</label>
+        <input type="text" id="original-url-custom" placeholder="Enter URL to shorten" required>
+        <button type="submit">Shorten with Custom URL</button>
+    </form>
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('shorten-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const originalUrl = document.getElementById('original-url').value;
+            const response = await fetch('/shorten', {
+                method: 'POST',
+                body: originalUrl
+            });
+            const shortenedUrl = await response.text();
+            displayResult(`Shortened URL: kdnsite.xyz/${shortenedUrl}`);
+        });
+
+        document.getElementById('custom-shorten-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const customUrl = document.getElementById('custom-url').value;
+            const originalUrl = document.getElementById('original-url-custom').value;
+            const response = await fetch(`/${customUrl}/shorten`, {
+                method: 'POST',
+                body: originalUrl
+            });
+            const result = await response.text();
+            displayResult(`Result: ${result}`);
+        });
+
+        function displayResult(message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+            const resultMessage = document.createElement('p');
+            resultMessage.textContent = message;
+            resultDiv.appendChild(resultMessage);
+        }
+    </script>
+</body>
+</html>
