@@ -1,53 +1,41 @@
-use clap::{Parser, Subcommand};
+use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use uuid::Uuid;
+use std::collections::HashMap;
+use std::sync::Mutex;
 
-#[derive(Parser)]
-#[command(name = "url-shortener")]
-#[command(about = "A simple URL shortener CLI app", long_about = None)]
-struct Cli {
-    #[command(subcommand)]
-    command: Commands,
+struct AppState {
+    url_map: Mutex<HashMap<String, String>>,
 }
 
-#[derive(Subcommand)]
-enum Commands {
-    Shorten {
-        #[arg(short, long)]
-        url: String,
-    },
-    Redirect {
-        #[arg(short, long)]
-        shortened_url: String,
-    },
+async fn shorten_url(data: web::Data<AppState>, req_body: String) -> impl Responder {
+    let mut url_map = data.url_map.lock().unwrap();
+    let shortened_url = Uuid::new_v4().to_string();
+    url_map.insert(shortened_url.clone(), req_body);
+    HttpResponse::Ok().body(shortened_url)
 }
 
-fn handle_url_shortening_request(url: &str) -> String {
-    fn generate_shortened_url(url: &str) -> String {
-        return url.to_string();
+async fn redirect_to_original(data: web::Data<AppState>, shortened_url: web::Path<String>) -> impl Responder {
+    let url_map = data.url_map.lock().unwrap();
+    if let Some(original_url) = url_map.get(&shortened_url.into_inner()) {
+        HttpResponse::Found().header("Location", original_url.clone()).finish()
+    } else {
+        HttpResponse::NotFound().body("URL not found")
     }
-
-    let new_url: String = generate_shortened_url(url);
-    new_url
 }
 
-fn redirect_to_original_url(shortened_url: &str) -> String {
-    shortened_url.to_string()
-}
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    let app_state = web::Data::new(AppState {
+        url_map: Mutex::new(HashMap::new()),
+    });
 
-fn store_url_mapping(shortened_url: &str, original_url: &str) -> bool {
-    true
-}
-
-fn main() {
-    let cli = Cli::parse();
-
-    match &cli.command {
-        Commands::Shorten { url } => {
-            let shortened_url = handle_url_shortening_request(url);
-            println!("Shortened URL: {}", shortened_url);
-        }
-        Commands::Redirect { shortened_url } => {
-            let original_url = redirect_to_original_url(shortened_url);
-            println!("Original URL: {}", original_url);
-        }
-    }
+    HttpServer::new(move || {
+        App::new()
+            .app_data(app_state.clone())
+            .route("/shorten", web::post().to(shorten_url))
+            .route("/{shortened_url}", web::get().to(redirect_to_original))
+    })
+    .bind("127.0.0.1:8080")?
+    .run()
+    .await
 }
